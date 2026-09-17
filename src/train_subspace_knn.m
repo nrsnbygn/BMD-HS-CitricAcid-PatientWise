@@ -1,0 +1,26 @@
+function mdl = train_subspace_knn(Xtrain,ytrain,cfg)
+%TRAIN_SUBSPACE_KNN KNN-based random-subspace ensemble.
+% k, distance and weighting come from the thesis text. Ensemble cycle count
+% and subspace dimension are explicit reproducibility settings because V7
+% does not fully specify them.
+
+p=size(Xtrain,2);
+switch lower(cfg.ensemble.SubspaceDimensionRule)
+    case 'sqrt'
+        nPred=max(1,min(p,round(sqrt(p))));
+    otherwise
+        error('Unknown SubspaceDimensionRule.');
+end
+
+t = templateKNN('NumNeighbors',cfg.knn.NumNeighbors, ...
+    'Distance',cfg.knn.Distance, ...
+    'DistanceWeight',cfg.knn.DistanceWeight, ...
+    'Standardize',false);
+
+mdl = fitcensemble(Xtrain,categorical(ytrain), ...
+    'Method','Subspace', ...
+    'Learners',t, ...
+    'NumLearningCycles',cfg.ensemble.NumLearningCycles, ...
+    'NPredToSample',nPred, ...
+    'ClassNames',categories(categorical(ytrain)));
+end
