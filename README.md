@@ -1,74 +1,74 @@
 # BMD-HS Citric Acid Pattern — Patient-wise evaluation
 
-MATLAB reproduction of the method described in `Fadile_Öztürk_Tez_V7` with one methodological correction: **all evaluation is subject/patient-wise and all supervised preprocessing is fitted inside the training fold**.
+MATLAB reproduction of the method described in `Fadile_Öztürk_Tez_V7` with the evaluation corrected to prevent data leakage: **all evaluation is subject/patient-wise and all supervised preprocessing is fitted inside the training fold**.
 
-## Thesis method reproduced
+## Thesis method preserved
 
 1. BMD-HS PCG recordings (4 kHz), split into non-overlapping 2 s segments.
 2. Five-level `db4` DWT.
-3. Feature extraction from **Raw + A1 + A2 + A3 + A4** (A5 and D1–D5 are not used, matching the thesis).
+3. Feature extraction from **Raw + A1 + A2 + A3 + A4** (A5 and D1-D5 are not used, matching V7).
 4. Per signal component: **384 Citric Acid Pattern (CAP) + 40 statistical features = 424 features**.
 5. Five components -> **2120 features/segment**.
-6. NCA feature selection -> top **256** features.
+6. NCA -> top **256** features, fitted separately inside every training fold.
 7. KNN-based Subspace Ensemble classification.
 8. Ten-fold **subject-wise** cross-validation.
 
+## Citric Acid Pattern verification
+
+`src/citric_acid_pattern.m` implements the CAP architecture documented in V7: an 81-sample sliding window is reshaped to 9x9; the 12 directed edges shown in thesis Figure 6 are divided into two 6-edge blocks; signum, upper-threshold and lower-threshold binary codes generate six 64-bin histograms = 384 features. The threshold is `std(signal)/2` as stated in V7.
+
+The graph coordinates were transcribed from Figure 6 and are kept explicitly in the source so they can be audited.
+
 ## Why this repository differs from the original thesis experiment
 
-The thesis describes 10-fold CV after segmentation. For a defensible estimate of generalisation to unseen patients, this implementation never permits segments from the same subject in both train and test folds. NCA is also fitted only on the training subjects of each fold. Test labels are never used for feature selection, scaling, model fitting, or hyperparameter selection.
+The signal-processing and feature architecture are retained. The validation protocol is corrected:
 
-The signal-processing/feature method is intentionally kept close to the thesis; the validation protocol is corrected rather than redesigning the thesis.
+- no patient can occur in both train and test in a fold;
+- NCA is fitted on training subjects only;
+- scaling parameters are estimated on training subjects only;
+- the held-out fold is not used to choose the feature count or model settings;
+- a leakage audit is written for every run.
 
 ## Scientific contribution test
 
-The repository runs two pipelines on **exactly the same patient-wise folds**:
+Two pipelines are evaluated on **exactly the same patient-wise folds**:
 
-- `baseline`: DWT + statistical features only.
-- `proposed`: DWT + Citric Acid Pattern + statistical features.
+- `baseline_stats`: thesis statistical features only;
+- `proposed_cap_stats`: thesis Citric Acid Pattern + statistical features.
 
-This directly tests whether the thesis's proposed CAP representation adds value under leakage-free evaluation. A contribution must be concluded from the measured results; the code does not assume that CAP will outperform the baseline.
+This tests whether CAP adds predictive information under the same leakage-free evaluation. The repository does not assume that the proposed method wins; the measured results determine that conclusion.
 
-## Requirements
+## Recommended exact-reproduction route
 
-MATLAB with Signal Processing Toolbox, Statistics and Machine Learning Toolbox, and Wavelet Toolbox.
-
-## Dataset manifest
-
-The BMD-HS audio data are not redistributed here. Create `data/manifest.csv` with one row per original recording:
-
-```text
-subject_id,label,file_path
-P001,N,C:/BMD-HS/P001_recording01.wav
-P001,N,C:/BMD-HS/P001_recording02.wav
-P002,AS,C:/BMD-HS/P002_recording01.wav
-```
-
-`subject_id` is mandatory. It is the grouping variable that prevents patient leakage. `label` must be one of `N, AS, AR, MR, MS, MD`. `file_path` may be absolute or relative to the repository.
-
-> Do not create a new subject ID for each segment or each recording. All recordings belonging to the same patient must have the same `subject_id`.
-
-## Run
-
-Open MATLAB in the repository root and run:
+V7 states that 40 statistical features are used, but the available thesis text does not enumerate all 40 formulas. Therefore this repository deliberately does **not** invent substitute statistics. For the final thesis experiment, use the student's original 2120-D feature matrix:
 
 ```matlab
-setup;
-run_all;
+X          % nSegments x 2120
+y          % N / AS / AR / MR / MS / MD
+subjectID  % original patient ID for every segment
+save('data/features_2120.mat','X','y','subjectID','-v7.3')
 ```
 
-For a quick pipeline check before the full experiment:
+Then run:
 
 ```matlab
-setup;
-smoke_test;
+setup
+smoke_test
+run_all
 ```
+
+`subjectID` is mandatory. All recordings and all 2 s segments belonging to one patient must carry the same patient ID. Never assign a new patient ID per recording or per segment.
 
 ## Outputs
 
-`results/` contains fold assignments, per-fold metrics, aggregate metrics, predictions, selected NCA features, confusion matrices, and a leakage audit. The run stops with an error if a subject appears in both train and test within a fold.
+`results/` contains `SUMMARY.csv`, fold metrics, predictions, confusion matrices, NCA selections, patient-wise fold assignment and `LEAKAGE_AUDIT.csv`. Every `OverlapSubjects` value must be 0.
 
-## Important reproducibility note
+## MATLAB requirements
 
-The thesis specifies KNN `k=10`, Cityblock distance and distance weighting, while the reported winning classifier is Ensemble Subspace KNN. It does not fully specify every ensemble hyperparameter. This repository therefore records the executable ensemble settings in `config.m` rather than silently presenting them as thesis-specified parameters. Any change to those settings must be reported in the thesis/revision.
+Signal Processing Toolbox, Wavelet Toolbox, Statistics and Machine Learning Toolbox. MATLAB R2022b or newer is recommended.
 
-The thesis states that 256 features were selected after trying different feature counts, but does not fully specify a nested tuning protocol. To avoid leakage, the main reproduction fixes the feature count at 256 **a priori** from the thesis and fits NCA separately inside each training fold. It does not re-select 256 using the held-out test subjects.
+## Reproducibility notes
+
+V7 specifies KNN `k=10`, Cityblock distance and distance weighting, but does not fully specify every Ensemble Subspace KNN hyperparameter. The executable settings are therefore stated explicitly in `config.m`; they must not be described as thesis-specified unless confirmed from the student's original MATLAB code.
+
+V7 reports 256 NCA-selected features after trying different feature counts. The main leakage-free reproduction treats 256 as a fixed, pre-specified thesis setting and fits NCA only within each training fold; it does not tune the feature count on held-out patients.
