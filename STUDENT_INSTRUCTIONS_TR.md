@@ -1,27 +1,24 @@
 # Öğrenci için çalıştırma talimatı
 
-Bu repo tezdeki yöntemin sonuçlarını **hasta bağımsız ve veri sızıntısı olmayacak şekilde** yeniden test etmek içindir. Tez metnini şimdilik değiştirmeyin; önce bu deneyi tamamlayıp sonuç dosyalarını danışmana gönderin.
+Bu repo tezdeki yöntemi **hasta bağımsız ve veri sızıntısı olmayacak şekilde** yeniden test eder. Tez metnini şimdilik değiştirmeyin; önce deneyi tamamlayıp sonuç klasörünü danışmana gönderin.
 
 ## 1. Repoyu indirin
-
 GitHub'dan `Code > Download ZIP` ile indirin ve ZIP'i açın.
 
-## 2. Tezde kullandığınız 2120 öznitelikli matrisi hazırlayın
-
-Tezdeki mevcut kodunuzla ürettiğiniz öznitelik matrisini `data/features_2120.mat` olarak kaydedin. Dosyada tam olarak şu üç değişken bulunmalıdır:
+## 2. Tezde kullandığınız ORİJİNAL 2120 öznitelikli matrisi hazırlayın
+Tezde sonuçları üretirken kullandığınız mevcut öznitelik matrisini `data/features_2120.mat` olarak kaydedin:
 
 ```matlab
-X          % 8716 x 2120 öznitelik matrisi (veya gerçekten kullanılan segment sayısı)
+X          % segment x 2120: tezde kullanılan orijinal özellikler
 y          % her segmentin N/AS/AR/MR/MS/MD etiketi
-subjectID  % her segmentin ait olduğu 109 hastadan hangisi olduğunu gösteren kimlik
+subjectID  % segmentin ait olduğu gerçek hasta kimliği
 save('data/features_2120.mat','X','y','subjectID','-v7.3')
 ```
 
-**Kritik:** Aynı hastanın 8 farklı kaydı ve bu kayıtlardan çıkan bütün 2 saniyelik segmentler aynı `subjectID` değerini taşımalıdır. Kayıt veya segment başına yeni hasta numarası üretmeyin.
+**Kritik:** Aynı hastanın 8 kaydı ve bunlardan oluşan bütün 2 saniyelik segmentler aynı `subjectID` değerini taşımalıdır. Kayıt veya segment başına yeni hasta numarası üretmeyin. Kod 109'dan farklı hasta sayısı görürse uyarı verecektir; bir hastada birden fazla tez sınıf etiketi görürse çalışmayı durduracaktır.
 
 ## 3. MATLAB'da çalıştırın
-
-MATLAB Current Folder'ı repo klasörü yapın:
+Current Folder repo klasörü iken:
 
 ```matlab
 setup
@@ -29,29 +26,30 @@ smoke_test
 run_all
 ```
 
-## 4. Danışmana gönderilecek dosyalar
+`smoke_test` başarılı olmadan ana deneyi kullanmayın. Başarılı test mesajında CAP=384, patient overlap=0, train-only NCA ve classifier kontrolü görülür.
 
-Çalışma bittikten sonra `results` klasörünü ZIP yapıp gönderin. Özellikle şu dosyalar gereklidir:
+## 4. Çalıştırılan üç deney
+Aynı patient-wise fold'lar üzerinde:
+
+- `baseline_stats`: yalnız istatistiksel özellikler
+- `cap_only`: yalnız Citric Acid Pattern özellikleri (ablation)
+- `proposed_cap_stats`: tezdeki Citric Acid Pattern + istatistiksel özellikler
+
+NCA her fold'da yalnız eğitim hastalarında öğrenilir. Test hastalarının etiketleri NCA, ölçekleme veya model eğitiminde kullanılmaz.
+
+## 5. Danışmana gönderilecekler
+Çalışma bittikten sonra **results klasörünün tamamını ZIP yapıp gönderin**. Özellikle:
 
 - `SUMMARY.csv`
 - `LEAKAGE_AUDIT.csv`
 - `patientwise_fold_assignment.csv`
-- `baseline_fold_metrics.csv`
-- `proposed_fold_metrics.csv`
-- `baseline_predictions.csv`
-- `proposed_predictions.csv`
+- `subject_level_folds.csv`
+- `baseline_*`
+- `cap_only_*`
+- `proposed_*`
 - tüm `*_nca.mat` dosyaları
 
 `LEAKAGE_AUDIT.csv` içindeki bütün `OverlapSubjects` değerleri **0** olmalıdır. Aksi durumda sonuçlar kullanılmayacaktır.
 
-## 5. Sonuçların anlamı
-
-`baseline_stats`: tezdeki istatistiksel özelliklerin hasta bağımsız sonucu.
-
-`proposed_cap_stats`: tezdeki özgün Citric Acid Pattern + istatistiksel özelliklerin hasta bağımsız sonucu.
-
-İki deney aynı hasta fold'larını kullanır. Böylece Citric Acid Pattern'in gerçekten ek katkı sağlayıp sağlamadığı doğrudan karşılaştırılabilir.
-
 ## Önemli
-
-Eski tezdeki yaklaşık doğruluk değerlerini yeniden elde etmeye çalışmak için hasta ayrımını bozmayın. Yeni değerlendirmede doğruluğun düşmesi tek başına kod hatası anlamına gelmez. Amaç, daha önce görülmemiş hastalarda geçerli performansı ölçmektir.
+Eski tez doğruluklarını yakalamak amacıyla hasta ayrımını veya NCA sırasını değiştirmeyin. Hasta-bağımsız sonuçların daha düşük olması tek başına kod hatası değildir. `SUMMARY.csv` içindeki Accuracy yanında özellikle BalancedAccuracy ve MacroF1 değerlerini de raporlayın.
