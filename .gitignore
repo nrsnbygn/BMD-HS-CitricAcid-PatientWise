@@ -1,0 +1,7 @@
+data/*.mat
+data/*.wav
+data/**/*.wav
+cache/
+results/
+*.asv
+.DS_Store
