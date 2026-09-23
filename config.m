@@ -1,5 +1,5 @@
 function cfg = config()
-%CONFIG Central configuration for the leakage-free thesis reproduction.
+%CONFIG Central configuration for leakage-free thesis reproduction.
 
 cfg.randomSeed = 1;
 cfg.fs = 4000;
@@ -11,16 +11,19 @@ cfg.components = {'raw','A1','A2','A3','A4'};
 cfg.numFolds = 10;
 cfg.ncaFeatureCount = 256;
 
-% KNN parameters explicitly stated in the thesis.
 cfg.knn.NumNeighbors = 10;
 cfg.knn.Distance = 'cityblock';
 cfg.knn.DistanceWeight = 'inverse';
 
-% The thesis reports Ensemble Subspace KNN but does not fully state these
-% ensemble settings. They are explicit here for reproducibility and MUST NOT
-% be described as thesis-specified unless the student's original code proves it.
 cfg.ensemble.NumLearningCycles = 30;
 cfg.ensemble.SubspaceDimensionRule = 'sqrt';
+
+% Class imbalance experiment. Balancing is applied ONLY to the training rows
+% after patient-wise splitting and NCA selection. Held-out patients retain
+% their natural class distribution.
+cfg.balance.enabled = true;
+cfg.balance.method = 'random_undersample';
+cfg.balance.seed = 1;
 
 cfg.manifest = fullfile('data','manifest.csv');
 cfg.cacheDir = fullfile('cache');
