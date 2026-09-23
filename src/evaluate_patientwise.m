@@ -41,8 +41,11 @@ end
 
 allM=compute_metrics(y,pred);
 summary.foldMetrics=rows;
-summary.predictions=table((1:N)',subjectID,foldId,string(y),string(pred), ...
-    'VariableNames',{'Row','SubjectID','Fold','TrueLabel','PredictedLabel'});
+rowNumber=(1:N)';
+trueLabel=string(y);
+predictedLabel=string(pred);
+summary.predictions=table(rowNumber,subjectID,foldId,trueLabel,predictedLabel, ...
+    'VariableNames',{'RowNumber','SubjectID','Fold','TrueLabel','PredictedLabel'});
 summary.overall=table(string(pipelineName),allM.accuracy,allM.balancedAccuracy, ...
     allM.macroPrecision,allM.macroRecall,allM.macroF1, ...
     'VariableNames',{'Pipeline','Accuracy','BalancedAccuracy','MacroPrecision','MacroRecall','MacroF1'});
