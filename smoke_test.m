@@ -17,7 +17,9 @@ y=categorical(repelem(subjectClass,segPerSubject)');
 X=randn(numel(y),p);
 foldId=make_subject_folds(subjectID,y,5,cfg.randomSeed);
 for k=1:5
-    assert(isempty(intersect(unique(subjectID(foldId==k)),unique(subjectID(foldId~=k))), ...
+    trainSubjects=unique(subjectID(foldId~=k));
+    testSubjects=unique(subjectID(foldId==k));
+    assert(isempty(intersect(trainSubjects,testSubjects)), ...
         'Patient overlap detected in smoke test.');
 end
 
@@ -26,7 +28,7 @@ tr=foldId~=1; te=foldId==1;
 [idx,~]=nca_select_train_only(X(tr,:),y(tr),8);
 assert(numel(idx)==8 && all(idx>=1 & idx<=p),'NCA selection failed.');
 
-% 4) Train-only scaling + thesis classifier must produce one prediction/test row.
+% 4) Train-only scaling and classifier must produce one prediction/test row.
 mu=mean(X(tr,idx),1); sd=std(X(tr,idx),0,1); sd(sd==0)=1;
 A=(X(tr,idx)-mu)./sd; B=(X(te,idx)-mu)./sd;
 cfg.ensemble.NumLearningCycles=5;
