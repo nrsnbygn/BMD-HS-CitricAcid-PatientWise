@@ -25,8 +25,11 @@ for b=0:4
 end
 
 foldId=make_subject_folds(subjectID,y,cfg.numFolds,cfg.randomSeed);
-writetable(table((1:numel(y))',subjectID,string(y),foldId,'VariableNames', ...
-    {'Row','SubjectID','Label','Fold'}),fullfile(cfg.resultsDir,'patientwise_fold_assignment.csv'));
+rowNumber=(1:numel(y))';
+labelString=string(y);
+writetable(table(rowNumber,subjectID,labelString,foldId, ...
+    'VariableNames',{'RowNumber','SubjectID','Label','Fold'}), ...
+    fullfile(cfg.resultsDir,'patientwise_fold_assignment.csv'));
 
 fprintf('\nTRAIN-ONLY BALANCING: %s\n',cfg.balance.method);
 fprintf('Held-out patients remain at their natural class distribution.\n');
