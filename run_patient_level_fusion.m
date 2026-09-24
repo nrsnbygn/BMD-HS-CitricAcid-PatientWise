@@ -7,7 +7,7 @@ setup; cfg=config();
 if nargin<1, featureFile=fullfile('data','raw_cap_mfcc.mat'); end
 assert(isfile(featureFile),'Missing %s.',featureFile);
 S=load(featureFile,'y','subjectID','wavFile','segmentInFile');
-trueSeg=string(categorical(S.y)); sid=string(S.subjectID(:)); wav=string(S.wavFile(:));
+trueSeg=string(categorical(S.y)); sid=norm_id(S.subjectID); wav=string(S.wavFile(:));
 assert(numel(sid)==8716 && numel(wav)==8716,'Expected 8716 rows.');
 
 pipes=["raw_cap_only","raw_mfcc_only","raw_cap_mfcc"];
