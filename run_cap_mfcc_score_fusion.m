@@ -15,8 +15,15 @@ capFile=fullfile(cfg.resultsDir,'raw_cap_only_scores.csv');
 assert(isfile(capFile),'Run run_cap_soft_scores first.');
 C=readtable(capFile,'TextType','string');
 assert(height(C)==N,'CAP score row mismatch.');
-assert(all(string(C.SubjectID)==sid) && all(C.Fold==foldId) && all(string(C.TrueLabel)==string(y)), ...
- 'CAP score alignment mismatch.');
+% Align saved CAP OOF rows by stable row identity instead of assuming identical
+% table order / SubjectID formatting.
+assert(ismember("RowNumber",string(C.Properties.VariableNames)),'CAP score file lacks RowNumber.');
+row=double(C.RowNumber);
+assert(numel(row)==N && isequal(sort(row),(1:N)'),'CAP RowNumber mismatch.');
+C=sortrows(C,'RowNumber');
+assert(all(C.RowNumber==(1:N)'),'CAP RowNumber alignment failed.');
+assert(all(C.Fold==foldId) && all(string(C.TrueLabel)==string(y)), ...
+ 'CAP fold/label alignment mismatch after RowNumber alignment.');
 capScores=zeros(N,K);
 for j=1:K
  vn="Score_"+string(classes{j}); assert(ismember(vn,string(C.Properties.VariableNames)),'Missing %s',vn);
